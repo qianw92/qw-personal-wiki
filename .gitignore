@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.pyc
+
+# Obsidian local workspace state (recreated automatically, not part of the deliverable)
+vault/.obsidian/
+
+# OS cruft
+.DS_Store

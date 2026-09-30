@@ -1,0 +1,231 @@
++ echo '###############################################'
+###############################################
++ echo '# OFFLINE DEMONSTRATION'
+# OFFLINE DEMONSTRATION
+++ date
++ echo '# Started: Tue Sep 29 17:48:07 PDT 2026'
+# Started: Tue Sep 29 17:48:07 PDT 2026
++ echo '###############################################'
+###############################################
++ echo
+
++ echo '=== Step 0: Prove there is no internet connection ==='
+=== Step 0: Prove there is no internet connection ===
++ echo '(This command SHOULD fail/timeout. That failure is the actual proof.)'
+(This command SHOULD fail/timeout. That failure is the actual proof.)
++ curl -s -o /dev/null --max-time 5 -w 'HTTP status: %{http_code}\n' https://www.google.com
+HTTP status: 000
++ echo 'curl exit code: 6  (a non-zero code, or '\''HTTP status: 000'\'', means it could not reach the internet - expected)'
+curl exit code: 6  (a non-zero code, or 'HTTP status: 000', means it could not reach the internet - expected)
++ echo
+
++ echo '=== Step 1: Restart the CLI'\''s model server in local mode ==='
+=== Step 1: Restart the CLI's model server in local mode ===
++ pkill -f 'ollama serve'
++ sleep 1
++ disown
++ sleep 3
++ nohup ollama serve
++ ollama list
+NAME           ID              SIZE      MODIFIED   
+gemma3n:e2b    719372f8c7de    5.6 GB    2 days ago    
++ echo '(Model is already downloaded locally - this works with no internet.)'
+(Model is already downloaded locally - this works with no internet.)
++ echo
+
++ echo '=== Step 2: wiki --help ==='
+=== Step 2: wiki --help ===
++ python3 wiki.py --help
+usage: wiki [-h] {ingest,search,ask,chat} ...
+
+Personal Wiki CLI: local Gemma + RAG over vault/raw sources. Modes: ingest
+(built), search / ask / chat (coming in the next step).
+
+positional arguments:
+  {ingest,search,ask,chat}
+    ingest              read vault/raw sources and (re)build vault/wiki +
+                        index.md
+    search              show original matching passages, no generated answer
+    ask                 standalone factual answer with citations, or
+                        insufficient evidence
+    chat                start the personal assistant
+
+options:
+  -h, --help            show this help message and exit
++ echo
+
++ echo '=== Step 3: Ingest local sources ==='
+=== Step 3: Ingest local sources ===
++ python3 wiki.py ingest ./vault/raw
+  drafting: Cities/San Francisco.md
+  drafting: Cities/Daly City.md
+  drafting: Cities/South San Francisco.md
+  drafting: Cities/San Mateo.md
+  drafting: Cities/Redwood City.md
+  drafting: Cities/Menlo Park.md
+  drafting: Cities/Palo Alto.md
+  drafting: Cities/Mountain View.md
+  drafting: Cities/Sunnyvale.md
+  drafting: Cities/Cupertino.md
+  drafting: Cities/Santa Clara.md
+  drafting: Cities/San Jose.md
+  drafting: Cities/Milpitas.md
+  drafting: Cities/Oakland.md
+  drafting: Cities/Berkeley.md
+  drafting: Cities/Alameda.md
+  drafting: Cities/Richmond.md
+  drafting: Cities/Fremont.md
+  drafting: Cities/Hayward.md
+  drafting: Cities/Walnut Creek.md
+  drafting: Cities/Concord.md
+  drafting: Cities/Pleasanton.md
+  drafting: Cities/Livermore.md
+  drafting: Cities/San Rafael.md
+  drafting: Cities/Vallejo.md
+  drafting: Cities/Napa.md
+  drafting: Cities/Santa Rosa.md
+  drafting: Regions/Bay Area Sub-Regions Overview.md
+  drafting: San Francisco Neighborhoods/Financial District.md
+  drafting: San Francisco Neighborhoods/North Beach.md
+  drafting: San Francisco Neighborhoods/Chinatown.md
+  drafting: San Francisco Neighborhoods/Nob Hill.md
+  drafting: San Francisco Neighborhoods/Russian Hill.md
+  drafting: San Francisco Neighborhoods/Telegraph Hill.md
+  drafting: San Francisco Neighborhoods/Union Square.md
+  drafting: San Francisco Neighborhoods/Tenderloin.md
+  drafting: San Francisco Neighborhoods/Hayes Valley.md
+  drafting: San Francisco Neighborhoods/Civic Center.md
+  drafting: San Francisco Neighborhoods/SoMa.md
+  drafting: San Francisco Neighborhoods/Mission Bay.md
+  drafting: San Francisco Neighborhoods/Potrero Hill.md
+  drafting: San Francisco Neighborhoods/Dogpatch.md
+  drafting: San Francisco Neighborhoods/The Mission.md
+  drafting: San Francisco Neighborhoods/The Castro.md
+  drafting: San Francisco Neighborhoods/Noe Valley.md
+  drafting: San Francisco Neighborhoods/Twin Peaks.md
+  drafting: San Francisco Neighborhoods/Excelsior.md
+  drafting: San Francisco Neighborhoods/Pacific Heights.md
+  drafting: San Francisco Neighborhoods/The Marina.md
+  drafting: San Francisco Neighborhoods/The Presidio.md
+  drafting: San Francisco Neighborhoods/Richmond District.md
+  drafting: San Francisco Neighborhoods/Sunset District.md
+  drafting: San Francisco Neighborhoods/Golden Gate Park.md
+
+Ingested 53 source passages into 53 wiki notes.
+Wiki index rebuilt at vault/index.md
+Retrieval index rebuilt: 53 passages searchable via `wiki search`.
++ echo
+
++ echo '=== Step 4: Four required ask-mode tests ==='
+=== Step 4: Four required ask-mode tests ===
++ echo '--- Test 1: direct question, one source ---'
+--- Test 1: direct question, one source ---
++ python3 wiki.py ask 'What is Fremont'\''s approximate population, and what company'\''s vehicle assembly plant is there?'
+Fremont's population is 230,504 (2020 Census) [Fremont], and it is home to Tesla's primary vehicle assembly plant [Fremont].
+
+[citations checked: ['Fremont', 'Fremont']]
++ echo
+
++ echo '--- Test 2: answerable, rephrased away from source wording ---'
+--- Test 2: answerable, rephrased away from source wording ---
++ python3 wiki.py ask 'Which city in Marin County has the biggest population?'
+Marin County's largest city is San Rafael with a population of 61,271 in 2020 [San Rafael]. The city is located north of San Francisco across the Golden Gate Bridge and is the largest city in Marin [San Rafael]. [San Rafael]
+
+[citations checked: ['San Rafael', 'San Rafael', 'San Rafael']]
++ echo
+
++ echo '--- Test 3: answerable, connects two sources ---'
+--- Test 3: answerable, connects two sources ---
++ python3 wiki.py ask 'Which bridge would you cross to get from the Presidio to Marin County, and which Bay Area sub-region is Marin part of?'
+To get from the Presidio to Marin County, you would cross the Golden Gate Bridge [Bay Area Sub-Regions Overview], and Marin County is part of the North Bay sub-region [Bay Area Sub-Regions Overview]. [The Presidio] (vault/raw/sf-neighborhoods.md) states that the Presidio is located in the northwest corner of SF, at the foot of the Golden Gate Bridge, and is a former U.S. Army post, now a national park with forests, trails, and coastal bluffs [Bay Area Sub-Regions Overview]. [San Rafael] (vault/raw/bay-area-cities.md) states that San Rafael is in Marin County, north of San Francisco across the Golden Gate Bridge, and is the largest city in Marin [Bay Area Sub-Regions Overview]. [San Rafael] (vault/raw/bay-area-cities.md) also states that Marin County's government and commercial center is at the base of hills leading to Mount Tamalpais [Bay Area Sub-Regions Overview].
+
+[citations checked: ['Bay Area Sub-Regions Overview', 'Bay Area Sub-Regions Overview', 'The Presidio', 'Bay Area Sub-Regions Overview', 'San Rafael', 'Bay Area Sub-Regions Overview', 'San Rafael', 'Bay Area Sub-Regions Overview']]
++ echo
+
++ echo '--- Test 4: unanswerable ---'
+--- Test 4: unanswerable ---
++ python3 wiki.py ask 'Who is the current mayor of Oakland?'
+The wiki does not contain enough information to answer this question. [Bay Area Sub-Regions Overview]
+
+[insufficient evidence: no supporting passage found]
++ echo
+
++ echo '=== Step 5: Chat and search mode-boundary checks ==='
+=== Step 5: Chat and search mode-boundary checks ===
++ echo '--- 5a: wiki search (no generated answer) ---'
+--- 5a: wiki search (no generated answer) ---
++ python3 wiki.py search 'Golden Gate Bridge Presidio'
+[1] The Presidio  (source: vault/raw/sf-neighborhoods.md)
+    - Location: northwest corner of SF, at the foot of the Golden Gate Bridge.
+    - Highlight: a former U.S. Army post, now a national park with forests, trails, and coastal bluffs.
+
+[2] The Marina  (source: vault/raw/sf-neighborhoods.md)
+    - Location: north SF, along the northern waterfront, west of Russian Hill and the Presidio's eastern edge.
+    - Highlight: a flat, waterfront neighborhood with views of the Golden Gate Bridge, popular for jogging and yacht harbors.
+
+[3] San Rafael  (source: vault/raw/bay-area-cities.md)
+    - Population: 61,271 (2020 Census).
+    - Location: in Marin County, north of San Francisco across the Golden Gate Bridge, the largest city in Marin.
+    - Highlight: Marin County's government and commercial center, at the base of hills leading to Mount Tamalpais.
+
+[4] San Francisco  (source: vault/raw/bay-area-cities.md)
+    - Population: 873,965 (2020 Census).
+    - Location: the Bay Area's anchor city, at the northern tip of the San Francisco Peninsula, on a peninsula bordered by the Pacific Ocean to the west and San Francisco Bay to the east. All "north/south/east/west of SF" references in this note set are measured from here.
+    - Highlight: dense, hilly, and historically the region's financial, cultural, and tourism center, home to the Golden Gate Bridge and a compact 7x7-mile street grid.
+
+[5] Richmond District (Inner & Outer)  (source: vault/raw/sf-neighborhoods.md)
+    - Location: northwest SF, north of Golden Gate Park, stretching from the park to the Pacific Ocean.
+    - Highlight: a foggy, residential district with a large Asian-American population and Clement Street's shopping corridor.
+
++ echo
+
++ echo '--- 5b: chat capabilities, follow-up, and chat-claim isolation from ask ---'
+--- 5b: chat capabilities, follow-up, and chat-claim isolation from ask ---
++ python3 -
+[chat] User: what can you help me with?
+[chat] retrieved=False
+[chat] Assistant: Hi there! I'm Bay Wiki Assistant, and I'm excited to help you explore the amazing Bay Area! 
+
+Basically, I can help you brainstorm, draft content, and find information about cities and neighborhoods in the Bay Area. 
+
+For example, you could ask me about a specific city, or try "search neighborhoods near the Presidio." I'm ready when you are! 😊
+
+[chat] User: draft a one-sentence plan for a weekend trip to Fremont
+[chat] retrieved=True
+[chat] Assistant: Okay! Here's a one-sentence plan for a weekend trip to Fremont, focusing on a mix of Tesla and local experiences:
+
+"Explore Fremont's Tesla plant and the surrounding area, followed by a visit to a local restaurant or exploring the city's diverse community." 
+
+To make this even better, do you want me to brainstorm some specific activities or restaurants in Fremont to add to the plan? Or perhaps you'd like me to focus on a specific aspect, like Tesla or the local culture? Just let me know!
+
+[chat] User: make that shorter
+[chat] retrieved=False
+[chat] Assistant: "Visit Fremont's Tesla plant and enjoy local dining/cultural experiences."
++ echo
+
++ echo '--- 5c: standalone ask must ignore anything only said in chat ---'
+--- 5c: standalone ask must ignore anything only said in chat ---
++ python3 wiki.py ask 'Does Fremont have a place called Mission San Jose?'
+The wiki does not contain enough information to answer this question. [San Jose]
+
+[insufficient evidence: no supporting passage found]
++ echo
+
++ echo '=== Step 6: Stop the model server ==='
+=== Step 6: Stop the model server ===
++ pkill -f 'ollama serve'
++ sleep 1
++ pgrep -fl 'ollama serve'
++ echo 'ollama server stopped'
+ollama server stopped
++ echo
+
++ echo '###############################################'
+###############################################
++ echo '# OFFLINE DEMONSTRATION COMPLETE'
+# OFFLINE DEMONSTRATION COMPLETE
+++ date
++ echo '# Finished: Tue Sep 29 17:49:36 PDT 2026'
+# Finished: Tue Sep 29 17:49:36 PDT 2026
++ echo '###############################################'
+###############################################
